@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Menu, X } from "lucide-react";
@@ -13,8 +12,7 @@ const Navbar = () => {
         <div className="container mx-auto px-4 md:px-6">
           <div className="flex items-center justify-between py-4">
             <Link to="/" className="flex items-center gap-2">
-              <div className="h-8 w-8 rounded-md bg-gradient-to-r from-nexloop-primary to-nexloop-secondary"></div>
-              <span className="font-bold text-xl">NexLoop</span>
+              <img src="/logo.jpg" alt="NexLoop Logo" className="h-16 w-auto" />
             </Link>
             
             <nav className="hidden md:flex items-center gap-6">

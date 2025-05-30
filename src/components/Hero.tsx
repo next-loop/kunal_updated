@@ -9,7 +9,7 @@ const Hero = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
           <div className="space-y-6 animate-fade-in">
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-nexloop-dark">
-              Empower Your Future with NexLoop Learning
+              Empower Your Future with Nexloop Learning
             </h1>
             <p className="text-lg md:text-xl text-gray-600 max-w-lg">
               Enroll in career-building courses designed by experts. Start your learning journey today.
@@ -50,7 +50,7 @@ const Hero = () => {
                 </div>
                 <div>
                   <p className="text-sm font-medium">Join 10,000+ students</p>
-                  <p className="text-xs text-gray-500">Learning with NexLoop</p>
+                  <p className="text-xs text-gray-500">Learning with Nexloop</p>
                 </div>
               </div>
             </div>

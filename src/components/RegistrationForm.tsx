@@ -254,7 +254,7 @@ const RegistrationForm = () => {
         <div className="text-center mb-12">
           <h2 className="text-3xl md:text-4xl font-bold mb-4">Register for a Course</h2>
           <p className="text-gray-600 max-w-2xl mx-auto">
-            Select your preferred course and complete your registration in minutes. Join thousands of students already learning with NexLoop.
+            Select your preferred course and complete your registration in minutes. Join thousands of students already learning with Nexloop.
           </p>
         </div>
 
@@ -417,31 +417,31 @@ const RegistrationForm = () => {
                   <div className="h-6 w-6 rounded-full bg-nexloop-primary/20 flex items-center justify-center mr-3 mt-0.5">
                     <span className="text-nexloop-primary text-sm">✓</span>
                   </div>
-                  <span>Expert-led curriculum with hands-on projects</span>
+                  <span>You contribute, not just observe Your work creates real impact.</span>
                 </li>
                 <li className="flex items-start">
                   <div className="h-6 w-6 rounded-full bg-nexloop-primary/20 flex items-center justify-center mr-3 mt-0.5">
                     <span className="text-nexloop-primary text-sm">✓</span>
                   </div>
-                  <span>Flexible learning schedule that fits your life</span>
+                  <span>You gain mentors, not just managers Learn from those who’ve been there.</span>
                 </li>
                 <li className="flex items-start">
                   <div className="h-6 w-6 rounded-full bg-nexloop-primary/20 flex items-center justify-center mr-3 mt-0.5">
                     <span className="text-nexloop-primary text-sm">✓</span>
                   </div>
-                  <span>One-on-one mentoring from industry professionals</span>
+                  <span>You step into confidence, not just a role Grow into leadership with support.</span>
                 </li>
                 <li className="flex items-start">
                   <div className="h-6 w-6 rounded-full bg-nexloop-primary/20 flex items-center justify-center mr-3 mt-0.5">
                     <span className="text-nexloop-primary text-sm">✓</span>
                   </div>
-                  <span>Industry-recognized certification upon completion</span>
+                  <span>You join a community, not just a team Collaborate, connect, and grow together.</span>
                 </li>
                 <li className="flex items-start">
                   <div className="h-6 w-6 rounded-full bg-nexloop-primary/20 flex items-center justify-center mr-3 mt-0.5">
                     <span className="text-nexloop-primary text-sm">✓</span>
                   </div>
-                  <span>Job placement assistance for top performers</span>
+                  <span>You build a portfolio, not just a resume Showcase real, meaningful work.</span>
                 </li>
                 <li className="flex items-start">
                   <div className="h-6 w-6 rounded-full bg-nexloop-primary/20 flex items-center justify-center mr-3 mt-0.5">

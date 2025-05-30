@@ -7,4 +7,6 @@ export const API_ENDPOINTS = {
   getRegistration: (token: string) => `${API_BASE_URL}/enroll/${token}`,
   createPayment: `${API_BASE_URL}/create-payment/create-payment`,
   verifyPayment: (orderId: string) => `${API_BASE_URL}/create-payment/verify/${orderId}`,
-}; 
+  testimonials: `${API_BASE_URL}/testimonials`,
+  team: `${API_BASE_URL}/team`,
+};
