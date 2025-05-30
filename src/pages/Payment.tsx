@@ -157,9 +157,6 @@ const Payment = () => {
         }
         const data = await response.json();
         setRegistrationDetails(data);
-
-        // Initialize Razorpay order after getting registration details
-        await initializeRazorpayOrder(data);
       } catch (error) {
         console.error('Error fetching registration details:', error);
         toast({
@@ -176,6 +173,7 @@ const Payment = () => {
 
   const initializeRazorpayOrder = async (details: RegistrationDetails) => {
     try {
+      setLoading(true);
       const response = await fetch(API_ENDPOINTS.createPayment, {
         method: 'POST',
         headers: {
@@ -194,6 +192,7 @@ const Payment = () => {
 
       const data = await response.json();
       setOrderDetails(data);
+      return data;
     } catch (error) {
       console.error('Payment initialization error:', error);
       toast({
@@ -201,6 +200,9 @@ const Payment = () => {
         description: error instanceof Error ? error.message : 'Failed to initialize payment',
         variant: 'destructive',
       });
+      return null;
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -276,7 +278,7 @@ const Payment = () => {
   };
 
   const handlePayment = async () => {
-    if (!orderDetails || !registrationDetails) return;
+    if (!registrationDetails) return;
 
     // Check if Razorpay is loaded
     if (!(window as any).Razorpay) {
@@ -288,30 +290,26 @@ const Payment = () => {
       return;
     }
 
+    // Initialize payment order
+    const orderData = await initializeRazorpayOrder(registrationDetails);
+    if (!orderData) return;
+
     const options = {
-      key: "rzp_test_QQd4iMqsM9ccBI",
-      amount: orderDetails.amount * 100,
+      key: "rzp_live_rly0BJKgu8Z5zG",
+      amount: orderData.amount * 100,
       currency: "INR",
-      name: "NextLoop Courses",
+      name: "Nexloop Courses",
       description: `Course: ${registrationDetails.title}`,
       image: "/logo.png",
-      order_id: orderDetails.razorpay_order_id,
+      order_id: orderData.razorpay_order_id,
       handler: function (response: any) {
         console.log("Payment Success", response);
         
-        // Get the order_id from the response, not from orderDetails
+        // Get the order_id from the response
         const orderId = response.razorpay_order_id;
         
         // Construct the verification URL with query parameters
         const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
-        const queryParams = new URLSearchParams({
-          razorpay_payment_id: response.razorpay_payment_id,
-          razorpay_order_id: response.razorpay_order_id,
-          razorpay_signature: response.razorpay_signature,
-          transaction_id: orderDetails.transaction_id
-        }).toString();
-        
-        // Include query parameters in the verification URL
         const verificationUrl = `${baseUrl}/create-payment/verify/${orderId}`;
         
         console.log('Sending verification request to:', verificationUrl);
@@ -354,7 +352,7 @@ const Payment = () => {
             // Store payment details in session storage for the success page
             sessionStorage.setItem('payment_success', JSON.stringify({
               course_title: registrationDetails.title,
-              amount: orderDetails.amount,
+              amount: orderData.amount,
               transaction_id: response.razorpay_payment_id,
               customer_name: registrationDetails.full_name,
               customer_email: registrationDetails.email
@@ -371,8 +369,8 @@ const Payment = () => {
             // Store error details in session storage for the failure page
             sessionStorage.setItem('payment_failure', JSON.stringify({
               course_title: registrationDetails.title,
-              amount: orderDetails.amount,
-              order_id: orderDetails.razorpay_order_id,
+              amount: orderData.amount,
+              order_id: orderData.razorpay_order_id,
               error_message: error.message,
               customer_name: registrationDetails.full_name,
               customer_email: registrationDetails.email
@@ -407,7 +405,7 @@ const Payment = () => {
         contact: registrationDetails.phone_number,
       },
       notes: {
-        registration_id: orderDetails.transaction_id,
+        registration_id: orderData.transaction_id,
         course_title: registrationDetails.title
       },
       theme: {

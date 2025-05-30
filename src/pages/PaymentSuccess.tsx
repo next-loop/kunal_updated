@@ -64,7 +64,6 @@ const PaymentSuccess = () => {
                   <h4 className="font-semibold mb-3">Next Steps:</h4>
                   <ul className="list-disc pl-5 space-y-2">
                     <li>Check your email for course access details</li>
-                    <li>Set up your learning profile</li>
                     <li>Join the student community</li>
                     <li>Start your learning journey</li>
                   </ul>
@@ -72,16 +71,10 @@ const PaymentSuccess = () => {
 
                 <div className="flex flex-col gap-3 mt-6">
                   <Button 
-                    onClick={() => navigate('/dashboard')}
+                    onClick={() => navigate('/')}
                     className="w-full"
                   >
-                    Go to Dashboard
-                  </Button>
-                  <Button 
-                    variant="outline"
-                    onClick={() => navigate('/')}
-                  >
-                    Back to Home
+                    Go to Home
                   </Button>
                 </div>
               </div>
