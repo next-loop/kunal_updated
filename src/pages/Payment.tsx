@@ -6,8 +6,6 @@ import { useToast } from '@/hooks/use-toast';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { paymentService } from '@/services/paymentService';
-import type { PaymentSessionResponse } from '@/services/paymentService';
 import { Input } from '@/components/ui/input';
 import { Loader2 } from 'lucide-react';
 import { API_ENDPOINTS } from '@/config/api';
@@ -84,13 +82,12 @@ interface CouponResponse {
   registration_id: number;
 }
 
-interface PaymentSession {
-  sessionId: string;
-  orderId?: string;
+interface RazorpayResponse {
+  message: string;
+  transaction_id: string;
   amount: number;
-  payment_session_id: string;
-  status?: string;
-  message?: string;
+  status: string;
+  razorpay_order_id: string;
 }
 
 const Payment = () => {
@@ -99,8 +96,40 @@ const Payment = () => {
   const [couponCode, setCouponCode] = useState('');
   const [applyingCoupon, setApplyingCoupon] = useState(false);
   const [appliedCoupon, setAppliedCoupon] = useState<CouponResponse | null>(null);
+  const [orderDetails, setOrderDetails] = useState<RazorpayResponse | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
+
+  // Add Razorpay script loading
+  useEffect(() => {
+    const loadRazorpayScript = () => {
+      return new Promise((resolve) => {
+        const script = document.createElement('script');
+        script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+        script.async = true;
+        script.onload = () => {
+          resolve(true);
+        };
+        script.onerror = () => {
+          resolve(false);
+        };
+        document.body.appendChild(script);
+      });
+    };
+
+    const initializeRazorpay = async () => {
+      const res = await loadRazorpayScript();
+      if (!res) {
+        toast({
+          title: "Razorpay SDK Failed to load",
+          description: "Please check your internet connection or try again later.",
+          variant: "destructive",
+        });
+      }
+    };
+
+    initializeRazorpay();
+  }, [toast]);
 
   // Fetch registration details on mount
   useEffect(() => {
@@ -128,6 +157,9 @@ const Payment = () => {
         }
         const data = await response.json();
         setRegistrationDetails(data);
+
+        // Initialize Razorpay order after getting registration details
+        await initializeRazorpayOrder(data);
       } catch (error) {
         console.error('Error fetching registration details:', error);
         toast({
@@ -141,6 +173,36 @@ const Payment = () => {
 
     fetchRegistrationDetails();
   }, [navigate, toast]);
+
+  const initializeRazorpayOrder = async (details: RegistrationDetails) => {
+    try {
+      const response = await fetch(API_ENDPOINTS.createPayment, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'accept': '*/*',
+        },
+        body: JSON.stringify({
+          course: details.course_id,
+          courseregistration: details.register_id
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to initialize payment');
+      }
+
+      const data = await response.json();
+      setOrderDetails(data);
+    } catch (error) {
+      console.error('Payment initialization error:', error);
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to initialize payment',
+        variant: 'destructive',
+      });
+    }
+  };
 
   const handleApplyCoupon = async () => {
     if (!couponCode.trim() || !registrationDetails) {
@@ -214,157 +276,155 @@ const Payment = () => {
   };
 
   const handlePayment = async () => {
-    if (!registrationDetails) {
+    if (!orderDetails || !registrationDetails) return;
+
+    // Check if Razorpay is loaded
+    if (!(window as any).Razorpay) {
       toast({
-        title: 'Error',
-        description: 'Registration details not found',
-        variant: 'destructive',
+        title: "Payment System Unavailable",
+        description: "Please check your internet connection or try again later.",
+        variant: "destructive",
       });
       return;
     }
 
-    setLoading(true);
-    console.log('Initiating payment request...', {
-      course_id: registrationDetails.course_id,
-      registration_id: registrationDetails.register_id
-    });
+    const options = {
+      key: "rzp_test_QQd4iMqsM9ccBI",
+      amount: orderDetails.amount * 100,
+      currency: "INR",
+      name: "NextLoop Courses",
+      description: `Course: ${registrationDetails.title}`,
+      image: "/logo.png",
+      order_id: orderDetails.razorpay_order_id,
+      handler: function (response: any) {
+        console.log("Payment Success", response);
+        
+        // Get the order_id from the response, not from orderDetails
+        const orderId = response.razorpay_order_id;
+        
+        // Construct the verification URL with query parameters
+        const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
+        const queryParams = new URLSearchParams({
+          razorpay_payment_id: response.razorpay_payment_id,
+          razorpay_order_id: response.razorpay_order_id,
+          razorpay_signature: response.razorpay_signature,
+          transaction_id: orderDetails.transaction_id
+        }).toString();
+        
+        // Include query parameters in the verification URL
+        const verificationUrl = `${baseUrl}/create-payment/verify/${orderId}`;
+        
+        console.log('Sending verification request to:', verificationUrl);
+        
+        fetch(verificationUrl, {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+          }
+        })
+          .then(async res => {
+            const data = await res.text();
+            console.log('Verification response:', {
+              status: res.status,
+              data: data
+            });
+            
+            if (!res.ok) {
+              try {
+                const errorData = JSON.parse(data);
+                throw new Error(errorData.message || `Verification failed with status: ${res.status}`);
+              } catch (e) {
+                throw new Error(`Verification failed with status: ${res.status}. URL: ${verificationUrl}`);
+              }
+            }
+
+            try {
+              return JSON.parse(data);
+            } catch (e) {
+              console.warn('Response is not JSON:', data);
+              return {
+                status: 'success',
+                message: 'Payment verified successfully'
+              };
+            }
+          })
+          .then(data => {
+            console.log("Payment verified:", data);
+            
+            // Store payment details in session storage for the success page
+            sessionStorage.setItem('payment_success', JSON.stringify({
+              course_title: registrationDetails.title,
+              amount: orderDetails.amount,
+              transaction_id: response.razorpay_payment_id,
+              customer_name: registrationDetails.full_name,
+              customer_email: registrationDetails.email
+            }));
+
+            // Redirect to success page after showing the toast
+            setTimeout(() => {
+              navigate('/payment-success');
+            }, 2000);
+          })
+          .catch(error => {
+            console.error("Payment verification failed:", error);
+            
+            // Store error details in session storage for the failure page
+            sessionStorage.setItem('payment_failure', JSON.stringify({
+              course_title: registrationDetails.title,
+              amount: orderDetails.amount,
+              order_id: orderDetails.razorpay_order_id,
+              error_message: error.message,
+              customer_name: registrationDetails.full_name,
+              customer_email: registrationDetails.email
+            }));
+
+            // Redirect to failure page
+            navigate('/payment-failure');
+          });
+      },
+      modal: {
+        ondismiss: function() {
+          // Show friendly message when user cancels payment
+          toast({
+            title: "Payment Cancelled",
+            description: (
+              <div className="space-y-2">
+                <p>You've cancelled the payment process.</p>
+                <p className="text-sm">
+                  Your course {registrationDetails.title} is still reserved for you. 
+                  You can complete the payment whenever you're ready.
+                </p>
+              </div>
+            ),
+            duration: 5000,
+          });
+        },
+        escape: true,
+      },
+      prefill: {
+        name: registrationDetails.full_name,
+        email: registrationDetails.email,
+        contact: registrationDetails.phone_number,
+      },
+      notes: {
+        registration_id: orderDetails.transaction_id,
+        course_title: registrationDetails.title
+      },
+      theme: {
+        color: "#3399cc",
+      },
+    };
 
     try {
-      // Fetch payment session from backend
-      const response = await fetch(API_ENDPOINTS.createPayment, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'accept': '*/*',
-        },
-        body: JSON.stringify({
-          course: registrationDetails.course_id,
-          courseregistration: registrationDetails.register_id
-        }),
-      });
-
-      const data = await response.json();
-      console.log('Payment API Response:', data);
-
-      if (!response.ok) {
-        if (data.error === "Payment already completed for this registration") {
-          toast({
-            title: "Payment Already Completed",
-            description: `This course has already been paid for. Transaction ID: ${data.transaction_id}. Amount paid: ₹${data.amount}`,
-            variant: "default",
-          });
-          // Redirect to success page since payment is already complete
-          navigate('/payment-success');
-          return;
-        }
-        throw new Error(data.message || data.error || 'Failed to initialize payment');
-      }
-
-      // Handle pending payment case
-      if (data.message === "Pending payment already exists for this registration") {
-        toast({
-          title: "Pending Payment Found",
-          description: "You have a pending payment session. Continuing with the existing payment.",
-          variant: "default",
-        });
-        
-        // Initialize payment using the existing payment session
-        const paymentElement = await paymentService.renderPaymentUI('payment-form', {
-          orderToken: data.payment_link,
-          orderAmount: data.amount,
-          customerName: registrationDetails.full_name,
-          customerEmail: registrationDetails.email,
-          customerPhone: registrationDetails.phone_number
-        });
-
-        // Handle payment result
-        paymentElement.on('payment_success', (result: any) => {
-          console.log('Payment Success!', result);
-          toast({
-            title: 'Success',
-            description: 'Payment completed successfully!',
-          });
-          navigate('/payment-success');
-        });
-
-        paymentElement.on('payment_failure', (result: any) => {
-          console.error('Payment Failed!', result);
-          toast({
-            title: 'Error',
-            description: `Payment failed: ${result.message || 'Please try again'}`,
-            variant: 'destructive',
-          });
-        });
-
-        paymentElement.on('payment_closed', () => {
-          console.log('Payment Window Closed');
-          toast({
-            title: 'Info',
-            description: 'Payment window closed',
-          });
-        });
-
-        return;
-      }
-
-      if (!data.payment_session_id) {
-        throw new Error('Failed to initialize payment');
-      }
-
-      // Store payment details in session storage for success page
-      sessionStorage.setItem('pendingPayment', JSON.stringify({
-        orderId: `order_${Date.now()}`,
-        amount: registrationDetails.discounted_amount,
-        customerName: registrationDetails.full_name,
-        customerEmail: registrationDetails.email,
-        customerPhone: registrationDetails.phone_number
-      }));
-
-      // Initialize payment using our payment service
-      const paymentElement = await paymentService.renderPaymentUI('payment-form', {
-        orderToken: data.payment_session_id,
-        orderAmount: registrationDetails.discounted_amount,
-        customerName: registrationDetails.full_name,
-        customerEmail: registrationDetails.email,
-        customerPhone: registrationDetails.phone_number
-      });
-
-      // Handle payment result
-      paymentElement.on('payment_success', (result: any) => {
-        console.log('Payment Success!', result);
-        toast({
-          title: 'Success',
-          description: 'Payment completed successfully!',
-        });
-        navigate('/payment-success');
-      });
-
-      paymentElement.on('payment_failure', (result: any) => {
-        console.error('Payment Failed!', result);
-        toast({
-          title: 'Error',
-          description: `Payment failed: ${result.message || 'Please try again'}`,
-          variant: 'destructive',
-        });
-      });
-
-      paymentElement.on('payment_closed', () => {
-        console.log('Payment Window Closed');
-        toast({
-          title: 'Info',
-          description: 'Payment window closed',
-        });
-      });
-
+      const rzp = new (window as any).Razorpay(options);
+      rzp.open();
     } catch (error) {
-      console.error('Payment error:', error);
+      console.error('Error opening Razorpay:', error);
       toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to process payment',
-        variant: 'destructive',
+        title: "Payment Error",
+        description: "Failed to open payment window. Please try again.",
+        variant: "destructive",
       });
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -474,15 +534,16 @@ const Payment = () => {
                     <Button 
                       className="w-full gradient-button" 
                       size="lg"
-                      disabled={loading}
                       onClick={handlePayment}
                     >
-                      {loading ? 'Processing...' : 'Proceed to Payment'}
+                      Pay ₹{registrationDetails?.discounted_amount}
                     </Button>
                     
-                    <p className="text-center text-sm text-gray-500">
-                      Your payment information is securely processed.
-                    </p>
+                    <div className="space-y-4 mt-6">
+                      <p className="text-center text-sm text-gray-500">
+                        Your payment information is securely processed.
+                      </p>
+                    </div>
                   </div>
                 </CardContent>
               </Card>

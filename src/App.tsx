@@ -8,7 +8,6 @@ import NotFound from "./pages/NotFound";
 import Payment from "./pages/Payment";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import PaymentFailure from "./pages/PaymentFailure";
-import PaymentVerification from "./pages/PaymentVerification";
 import About from "./pages/About";
 
 const queryClient = new QueryClient();
@@ -22,7 +21,6 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/payment" element={<Payment />} />
-          <Route path="/payment-verification" element={<PaymentVerification />} />
           <Route path="/payment-success" element={<PaymentSuccess />} />
           <Route path="/payment-failure" element={<PaymentFailure />} />
           <Route path="/about" element={<About />} />

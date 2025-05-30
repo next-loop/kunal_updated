@@ -1,136 +1,91 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { Check } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-import { useToast } from '@/hooks/use-toast';
+import { CheckCircle } from 'lucide-react';
 
-interface PaymentDetails {
-  orderId: string;
+interface PaymentSuccessDetails {
+  course_title: string;
   amount: number;
-  customerName: string;
-  customerEmail: string;
-  customerPhone: string;
-  transactionId?: string;
-  paymentStatus?: string;
-  courseTitle?: string;
+  transaction_id: string;
+  customer_name: string;
+  customer_email: string;
 }
 
 const PaymentSuccess = () => {
-  const [paymentDetails, setPaymentDetails] = useState<PaymentDetails | null>(null);
   const navigate = useNavigate();
-  const { toast } = useToast();
+  const [paymentDetails, setPaymentDetails] = useState<PaymentSuccessDetails | null>(null);
 
   useEffect(() => {
-    // Get payment details from session storage
-    const storedPayment = sessionStorage.getItem('pendingPayment');
-    if (!storedPayment) {
-      console.error('No payment details found in session storage');
-      toast({
-        title: 'Error',
-        description: 'Payment details not found',
-        variant: 'destructive',
-      });
+    const storedDetails = sessionStorage.getItem('payment_success');
+    if (!storedDetails) {
       navigate('/');
       return;
     }
 
-    try {
-      const details = JSON.parse(storedPayment);
-      
-      // Verify we have a successful payment
-      if (details.paymentStatus !== 'Completed' && details.paymentStatus !== 'Success') {
-        console.error('Invalid payment status:', details.paymentStatus);
-        toast({
-          title: 'Payment Not Completed',
-          description: 'Your payment has not been completed successfully.',
-          variant: 'destructive',
-        });
-        navigate('/payment');
-        return;
-      }
+    setPaymentDetails(JSON.parse(storedDetails));
+    // Clear the payment details from session storage
+    sessionStorage.removeItem('payment_success');
+  }, [navigate]);
 
-      console.log('Payment success details:', details);
-      setPaymentDetails(details);
-
-      // Show success toast
-      toast({
-        title: 'Payment Successful',
-        description: 'Your payment has been processed successfully.',
-      });
-
-      // Clear the pending payment from session storage
-      sessionStorage.removeItem('pendingPayment');
-    } catch (error) {
-      console.error('Error processing payment details:', error);
-      toast({
-        title: 'Error',
-        description: 'Could not process payment details',
-        variant: 'destructive',
-      });
-      navigate('/');
-    }
-  }, [navigate, toast]);
-
-  const handleBackToHome = () => {
-    navigate('/');
-  };
-
-  if (!paymentDetails) {
-    return null;
-  }
+  if (!paymentDetails) return null;
 
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
       <div className="flex-grow py-20 mt-16">
         <div className="container mx-auto px-4 max-w-2xl">
-          <Card className="p-8 text-center">
-            <div className="mb-6">
-              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Check className="w-8 h-8 text-green-600" />
+          <Card className="text-center">
+            <CardHeader>
+              <div className="flex justify-center mb-4">
+                <CheckCircle className="h-16 w-16 text-green-500" />
               </div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">Payment Successful!</h1>
-              <p className="text-gray-600">Thank you for enrolling in {paymentDetails.courseTitle}. Your transaction has been completed.</p>
-            </div>
-
-            <div className="space-y-4 mb-8">
-              <div className="border-t border-b py-4">
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  
-                  {paymentDetails.transactionId && (
-                    <>
-                      <div className="text-left text-gray-600">Transaction ID</div>
-                      <div className="text-right font-medium">{paymentDetails.transactionId}</div>
-                    </>
-                  )}
-                  
-                  <div className="text-left text-gray-600">Amount Paid</div>
-                  <div className="text-right font-medium">₹{paymentDetails.amount}</div>
-                  
-                  <div className="text-left text-gray-600">Name</div>
-                  <div className="text-right font-medium">{paymentDetails.customerName}</div>
-                  
-                  <div className="text-left text-gray-600">Email</div>
-                  <div className="text-right font-medium">{paymentDetails.customerEmail}</div>
+              <CardTitle className="text-2xl font-bold text-green-600">
+                Payment Successful!
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="bg-green-50 p-6 rounded-lg">
+                <h3 className="text-xl font-semibold mb-4">
+                  Welcome to {paymentDetails.course_title}!
+                </h3>
+                <div className="space-y-2 text-left">
+                  <p><span className="font-medium">Amount Paid:</span> ₹{paymentDetails.amount}</p>
+                  <p><span className="font-medium">Transaction ID:</span> {paymentDetails.transaction_id}</p>
+                  <p><span className="font-medium">Name:</span> {paymentDetails.customer_name}</p>
+                  <p><span className="font-medium">Email:</span> {paymentDetails.customer_email}</p>
                 </div>
               </div>
-            </div>
 
-            <div className="space-y-4">
-              <Button 
-                className="w-full gradient-button" 
-                size="lg"
-                onClick={handleBackToHome}
-              >
-                Back to Home
-              </Button>
-              <p className="text-sm text-gray-500">
-                A confirmation email has been sent to {paymentDetails.customerEmail}
-              </p>
-            </div>
+              <div className="space-y-4">
+                <div className="bg-blue-50 p-6 rounded-lg text-left">
+                  <h4 className="font-semibold mb-3">Next Steps:</h4>
+                  <ul className="list-disc pl-5 space-y-2">
+                    <li>Check your email for course access details</li>
+                    <li>Set up your learning profile</li>
+                    <li>Join the student community</li>
+                    <li>Start your learning journey</li>
+                  </ul>
+                </div>
+
+                <div className="flex flex-col gap-3 mt-6">
+                  <Button 
+                    onClick={() => navigate('/dashboard')}
+                    className="w-full"
+                  >
+                    Go to Dashboard
+                  </Button>
+                  <Button 
+                    variant="outline"
+                    onClick={() => navigate('/')}
+                  >
+                    Back to Home
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
           </Card>
         </div>
       </div>
@@ -139,4 +94,4 @@ const PaymentSuccess = () => {
   );
 };
 
-export default PaymentSuccess;
+export default PaymentSuccess; 
