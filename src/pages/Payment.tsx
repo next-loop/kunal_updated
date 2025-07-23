@@ -277,10 +277,160 @@ const Payment = () => {
     }
   };
 
+  // const handlePayment = async () => {
+  //   if (!registrationDetails) return;
+
+  //   // Check if Razorpay is loaded
+  //   if (!(window as any).Razorpay) {
+  //     toast({
+  //       title: "Payment System Unavailable",
+  //       description: "Please check your internet connection or try again later.",
+  //       variant: "destructive",
+  //     });
+  //     return;
+  //   }
+
+  //   // Initialize payment order
+  //   const orderData = await initializeRazorpayOrder(registrationDetails);
+  //   if (!orderData) return;
+
+  //   const options = {
+  //     key: "rzp_live_rly0BJKgu8Z5zG",
+  //     amount: orderData.amount * 100,
+  //     currency: "INR",
+  //     name: "Nexloop Courses",
+  //     description: `Course: ${registrationDetails.title}`,
+  //     image: "/logo.png",
+  //     order_id: orderData.razorpay_order_id,
+  //     handler: function (response: any) {
+  //       console.log("Payment Success", response);
+        
+  //       // Get the order_id from the response
+  //       const orderId = response.razorpay_order_id;
+        
+  //       // Construct the verification URL with query parameters
+  //       const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
+  //       const verificationUrl = `${baseUrl}/create-payment/verify/${orderId}`;
+        
+  //       console.log('Sending verification request to:', verificationUrl);
+        
+  //       fetch(verificationUrl, {
+  //         method: 'GET',
+  //         headers: {
+  //           'Accept': 'application/json',
+  //         }
+  //       })
+  //         .then(async res => {
+  //           const data = await res.text();
+  //           console.log('Verification response:', {
+  //             status: res.status,
+  //             data: data
+  //           });
+            
+  //           if (!res.ok) {
+  //             try {
+  //               const errorData = JSON.parse(data);
+  //               throw new Error(errorData.message || `Verification failed with status: ${res.status}`);
+  //             } catch (e) {
+  //               throw new Error(`Verification failed with status: ${res.status}. URL: ${verificationUrl}`);
+  //             }
+  //           }
+
+  //           try {
+  //             return JSON.parse(data);
+  //           } catch (e) {
+  //             console.warn('Response is not JSON:', data);
+  //             return {
+  //               status: 'success',
+  //               message: 'Payment verified successfully'
+  //             };
+  //           }
+  //         })
+  //         .then(data => {
+  //           console.log("Payment verified:", data);
+            
+  //           // Store payment details in session storage for the success page
+  //           sessionStorage.setItem('payment_success', JSON.stringify({
+  //             course_title: registrationDetails.title,
+  //             amount: orderData.amount,
+  //             transaction_id: response.razorpay_payment_id,
+  //             customer_name: registrationDetails.full_name,
+  //             customer_email: registrationDetails.email
+  //           }));
+
+  //           // Redirect to success page after showing the toast
+  //           setTimeout(() => {
+  //             navigate('/payment-success');
+  //           }, 2000);
+  //         })
+  //         .catch(error => {
+  //           console.error("Payment verification failed:", error);
+            
+  //           // Store error details in session storage for the failure page
+  //           sessionStorage.setItem('payment_failure', JSON.stringify({
+  //             course_title: registrationDetails.title,
+  //             amount: orderData.amount,
+  //             order_id: orderData.razorpay_order_id,
+  //             error_message: error.message,
+  //             customer_name: registrationDetails.full_name,
+  //             customer_email: registrationDetails.email
+  //           }));
+
+  //           // Redirect to failure page
+  //           navigate('/payment-failure');
+  //         });
+  //     },
+  //     modal: {
+  //       ondismiss: function() {
+  //         // Show friendly message when user cancels payment
+  //         toast({
+  //           title: "Payment Cancelled",
+  //           description: (
+  //             <div className="space-y-2">
+  //               <p>You've cancelled the payment process.</p>
+  //               <p className="text-sm">
+  //                 Your course {registrationDetails.title} is still reserved for you. 
+  //                 You can complete the payment whenever you're ready.
+  //               </p>
+  //             </div>
+  //           ),
+  //           duration: 5000,
+  //         });
+  //       },
+  //       escape: true,
+  //     },
+  //     prefill: {
+  //       name: registrationDetails.full_name,
+  //       email: registrationDetails.email,
+  //       contact: registrationDetails.phone_number,
+  //     },
+  //     notes: {
+  //       registration_id: orderData.transaction_id,
+  //       course_title: registrationDetails.title
+  //     },
+  //     theme: {
+  //       color: "#3399cc",
+  //     },
+  //   };
+
+  //   try {
+  //     const rzp = new (window as any).Razorpay(options);
+  //     rzp.open();
+  //   } catch (error) {
+  //     console.error('Error opening Razorpay:', error);
+  //     toast({
+  //       title: "Payment Error",
+  //       description: "Failed to open payment window. Please try again.",
+  //       variant: "destructive",
+  //     });
+  //   }
+  // };
+
+
   const handlePayment = async () => {
     if (!registrationDetails) return;
 
-    // Check if Razorpay is loaded
+   
     if (!(window as any).Razorpay) {
       toast({
         title: "Payment System Unavailable",
@@ -290,7 +440,7 @@ const Payment = () => {
       return;
     }
 
-    // Initialize payment order
+    
     const orderData = await initializeRazorpayOrder(registrationDetails);
     if (!orderData) return;
 
@@ -305,10 +455,10 @@ const Payment = () => {
       handler: function (response: any) {
         console.log("Payment Success", response);
         
-        // Get the order_id from the response
+      
         const orderId = response.razorpay_order_id;
         
-        // Construct the verification URL with query parameters
+        
         const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
         const verificationUrl = `${baseUrl}/create-payment/verify/${orderId}`;
         
@@ -349,7 +499,7 @@ const Payment = () => {
           .then(data => {
             console.log("Payment verified:", data);
             
-            // Store payment details in session storage for the success page
+          
             sessionStorage.setItem('payment_success', JSON.stringify({
               course_title: registrationDetails.title,
               amount: orderData.amount,
@@ -358,7 +508,7 @@ const Payment = () => {
               customer_email: registrationDetails.email
             }));
 
-            // Redirect to success page after showing the toast
+            
             setTimeout(() => {
               navigate('/payment-success');
             }, 2000);
@@ -366,7 +516,7 @@ const Payment = () => {
           .catch(error => {
             console.error("Payment verification failed:", error);
             
-            // Store error details in session storage for the failure page
+            
             sessionStorage.setItem('payment_failure', JSON.stringify({
               course_title: registrationDetails.title,
               amount: orderData.amount,
@@ -376,13 +526,13 @@ const Payment = () => {
               customer_email: registrationDetails.email
             }));
 
-            // Redirect to failure page
+            
             navigate('/payment-failure');
           });
       },
       modal: {
         ondismiss: function() {
-          // Show friendly message when user cancels payment
+          
           toast({
             title: "Payment Cancelled",
             description: (
@@ -411,6 +561,15 @@ const Payment = () => {
       theme: {
         color: "#3399cc",
       },
+      method: {
+        card: true,
+        netbanking: true,
+        wallet: true,
+        upi: {
+          vpa: true, 
+          qr: false  
+        }
+      }
     };
 
     try {
@@ -425,6 +584,7 @@ const Payment = () => {
       });
     }
   };
+
 
   if (loading) {
     return (
